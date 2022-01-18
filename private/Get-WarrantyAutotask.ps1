@@ -31,17 +31,23 @@ function Get-WarrantyAutotask {
         $WarState = Get-Warrantyinfo -DeviceSerial $device.serialnumber -client $Client
 
         if ($SyncWithSource -eq $true) {
+            $DeviceUpdate = 
+            [PSCustomObject]@{
+                id = $Device.id
+                warrantyExpirationDate = $WarState.EndDate
+            }
+
             switch ($OverwriteWarranty) {
                 $true {
                     if ($null -ne $warstate.EndDate) {
-                        $device | ForEach-Object { $_.warrantyExpirationDate = $warstate.EndDate; $_ } | Set-AutotaskAPIResource -Resource ConfigurationItems
+                        Set-AutotaskAPIResource -Resource ConfigurationItems -ID $Device.id -body $DeviceUpdate
                         "$((get-date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm:ss')) Autotask: $Client / $($device.SerialNumber) with AT ID $($device.id) warranty has been overwritten to $($warstate.EndDate)" | out-file $script:LogPath -Append -Force
                     }
                      
                 }
                 $false { 
                     if ($null -eq $device.WarrantyExpirationDate -and $null -ne $warstate.EndDate) { 
-                        $device | ForEach-Object { $_.warrantyExpirationDate = $warstate.EndDate; $_ } | Set-AutotaskAPIResource -Resource ConfigurationItems
+                        Set-AutotaskAPIResource -Resource ConfigurationItems -ID $Device.id -body $DeviceUpdate
                         "$((get-date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm:ss')) Autotask: $Client / $($device.SerialNumber) with AT ID $($device.id) warranty has been set to $($warstate.EndDate)" | out-file $script:LogPath -Append -Force
                     } 
                 }
